@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <title>S'S DARK COMMUNITY - LIVE TIMER</title>
     
+    <!-- Firebase Libraries -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
@@ -22,16 +23,16 @@
 
         #dragBox {
             position:fixed; top:150px; left:20px; width:120px; z-index:99999;
-            background:rgba(0,0,0,0.9); border:2px solid #ff0000; border-radius:12px;
+            background:rgba(0,0,0,0.95); border:2px solid #ff0000; border-radius:12px;
             padding:10px; text-align:center; animation:rgb-border 3s infinite linear; touch-action:none;
         }
         .title { font-family:'Orbitron'; font-size:8px; color:#fff; margin-bottom:8px; }
         .btn-style { width:100%; background:#fff; color:#000; border:none; border-radius:4px; padding:6px 0; font-size:9px; font-weight:bold; cursor:pointer; }
         
-        .result-box { background:rgba(255,255,255,0.1); border-radius:8px; padding:8px 0; margin:8px 0; border: 1px solid #333; }
+        .result-box { background:rgba(255,255,255,0.1); border-radius:8px; padding:8px 0; margin:8px 0; border: 1px solid #333; min-height: 45px; display: flex; flex-direction: column; justify-content: center; }
         #signalText { font-family:'Orbitron'; font-size:12px; font-weight:bold; display: block; }
         #timerText { font-size: 14px; color: #ffeb3b; font-weight: bold; font-family: 'Orbitron'; margin-top: 5px; display: block; }
-        #periodText { font-size: 8px; color: #888; }
+        #periodText { font-size: 8px; color: #888; margin-bottom: 2px; }
 
         #miniTrigger { position:fixed; top:40%; left:0; width:30px; height:30px; background:#000; border:2px solid #00ff00; border-radius:0 15px 15px 0; display:none; align-items:center; justify-content:center; z-index:100000; color:#00ff00; }
     </style>
@@ -45,20 +46,20 @@
 <div id="dragBox">
     <div class="title">S'S DARK LIVE</div>
     
-    <!-- সরাসরি ড্যাশবোর্ড UI (পাসওয়ার্ড ছাড়া) -->
     <div id="dashUI">
         <div id="periodText">PERIOD: ---</div>
         <div class="result-box">
-            <span id="signalText" style="color:#aaa;">WAITING</span>
+            <span id="signalText" style="color:#666;">WAITING</span>
             <span id="timerText">00s</span>
         </div>
-        <button class="btn-style" style="background:red; color:#fff; font-size:7px;" onclick="toggleView(false)">HIDE</button>
+        <button class="btn-style" style="background:red; color:#fff; font-size:7px;" onclick="toggleView(false)">HIDE MENU</button>
     </div>
 </div>
 
 <div id="miniTrigger" onclick="toggleView(true)">▶</div>
 
 <script>
+    // Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyAyrZ0fFcj5Y5HtlKzGJIsBtC9UeGbSDtI",
         authDomain: "signal-e5583.firebaseapp.com",
@@ -71,54 +72,64 @@
 
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-    let timerInterval;
 
-    // সরাসরি ডাটাবেস শোনা শুরু হবে
+    let lastSignalData = null;
+
+    // Firebase থেকে ডাটা শোনা
     function startListening() {
         database.ref('liveControl').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if(data) {
-                clearInterval(timerInterval); 
-                
-                const startTime = data.startTime;
-                const duration = 30; 
-
-                function updateCountdown() {
-                    const now = Date.now();
-                    const elapsed = Math.floor((now - startTime) / 1000);
-                    const remaining = duration - elapsed;
-
-                    if (remaining > 0) {
-                        document.getElementById("signalText").innerText = data.signal;
-                        document.getElementById("signalText").style.color = data.color;
-                        document.getElementById("timerText").innerText = remaining + "s";
-                        document.getElementById("periodText").innerText = "PERIOD: " + data.period;
-                    } else {
-                        document.getElementById("signalText").innerText = "WAITING";
-                        document.getElementById("signalText").style.color = "#aaa";
-                        document.getElementById("timerText").innerText = "00s";
-                        clearInterval(timerInterval);
-                    }
-                }
-                updateCountdown();
-                timerInterval = setInterval(updateCountdown, 1000);
-            }
+            lastSignalData = snapshot.val();
         });
     }
 
-    // পেজ লোড হলেই সিগন্যাল শোনা শুরু করবে
-    startListening();
+    // প্রধান টাইমার এবং লজিক ইঞ্জিন
+    function runAutoSystem() {
+        setInterval(() => {
+            const now = Date.now();
+            
+            // অটো ৩০ সেকেন্ডের টাইমার ক্যালকুলেশন
+            const timeLeft = 30 - (Math.floor(now / 1000) % 30);
+            
+            // বর্তমান ৩০ সেকেন্ড সাইকেলের শুরুর সময় বের করা
+            const currentCycleStartTime = Math.floor(now / 30000) * 30000;
 
-    // Dragging logic
+            const signalEl = document.getElementById("signalText");
+            const periodEl = document.getElementById("periodText");
+            const timerEl = document.getElementById("timerText");
+
+            // ১. টাইমার আপডেট
+            timerEl.innerText = (timeLeft < 10 ? "0" : "") + timeLeft + "s";
+
+            // ২. সিগন্যাল লজিক: 
+            // যদি Firebase এ ডাটা থাকে এবং সেই ডাটার 'startTime' বর্তমান ৩০ সেকেন্ড লুপের ভেতরে হয়, তবেই দেখাবে।
+            if (lastSignalData && lastSignalData.startTime >= currentCycleStartTime) {
+                signalEl.innerText = lastSignalData.signal;
+                signalEl.style.color = lastSignalData.color;
+                periodEl.innerText = "PERIOD: " + lastSignalData.period;
+            } else {
+                // ৩০ সেকেন্ড শেষ হলে বা নতুন লুপ শুরু হলে সিগন্যাল খালি (WAITING) হয়ে যাবে
+                signalEl.innerText = "WAITING";
+                signalEl.style.color = "#666";
+                periodEl.innerText = "PERIOD: ---";
+            }
+        }, 1000);
+    }
+
+    // সিস্টেম চালু করা
+    startListening();
+    runAutoSystem();
+
+    // Draggable UI Logic
     const box = document.getElementById("dragBox");
     let isMoving=false, ox, oy;
     box.addEventListener("touchstart", (e) => {
-        if(e.target.tagName==="BUTTON" || e.target.tagName==="INPUT") return;
+        if(e.target.tagName==="BUTTON") return;
         isMoving=true; ox=e.touches[0].clientX-box.offsetLeft; oy=e.touches[0].clientY-box.offsetTop;
     });
     document.addEventListener("touchmove", (e) => {
         if(!isMoving) return;
         box.style.left=(e.touches[0].clientX-ox)+"px"; box.style.top=(e.touches[0].clientY-oy)+"px";
+        e.preventDefault();
     },{passive:false});
     document.addEventListener("touchend", () => isMoving=false);
 
