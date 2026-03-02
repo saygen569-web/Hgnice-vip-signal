@@ -3,62 +3,134 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <title>S'S DARK COMMUNITY - LIVE TIMER</title>
+    <title>S'S DARK - LIVE SIGNAL</title>
     
-    <!-- Firebase Libraries -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Rajdhani:wght@600&display=swap');
-        body, html { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; font-family:'Rajdhani', sans-serif; }
-        .game-frame { position:absolute; inset:0; z-index:1; }
-        iframe { width:100%; height:100%; border:none; }
         
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background: #000; font-family: 'Rajdhani', sans-serif; 
+        }
+
+        .game-frame { position: absolute; inset: 0; z-index: 1; }
+        iframe { width: 100%; height: 100%; border: none; }
+        
+        /* RGB Border Animation */
         @keyframes rgb-border {
-            0% { border-color:#ff0000; box-shadow:0 0 10px #ff0000; }
-            50% { border-color:#00ff00; box-shadow:0 0 10px #00ff00; }
-            100% { border-color:#ff0000; box-shadow:0 0 10px #ff0000; }
+            0% { border-color:#ff0000; box-shadow: 0 0 8px #ff0000; }
+            50% { border-color:#00ff00; box-shadow: 0 0 8px #00ff00; }
+            100% { border-color:#ff0000; box-shadow: 0 0 8px #ff0000; }
         }
 
-        #dragBox {
-            position:fixed; top:150px; left:20px; width:120px; z-index:99999;
-            background:rgba(0,0,0,0.95); border:2px solid #ff0000; border-radius:12px;
-            padding:10px; text-align:center; animation:rgb-border 3s infinite linear; touch-action:none;
+        /* Floating User Box */
+        #userBox {
+            position: fixed; z-index: 99999;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #ff0000; border-radius: 12px;
+            padding: 8px; text-align: center;
+            animation: rgb-border 3s infinite linear;
+            width: 140px;
+            top: 100px; left: 15px;
+            will-change: transform;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.8);
+            touch-action: none;
         }
-        .title { font-family:'Orbitron'; font-size:8px; color:#fff; margin-bottom:8px; }
-        .btn-style { width:100%; background:#fff; color:#000; border:none; border-radius:4px; padding:6px 0; font-size:9px; font-weight:bold; cursor:pointer; }
-        
-        .result-box { background:rgba(255,255,255,0.1); border-radius:8px; padding:8px 0; margin:8px 0; border: 1px solid #333; min-height: 45px; display: flex; flex-direction: column; justify-content: center; }
-        #signalText { font-family:'Orbitron'; font-size:12px; font-weight:bold; display: block; }
-        #timerText { font-size: 14px; color: #ffeb3b; font-weight: bold; font-family: 'Orbitron'; margin-top: 5px; display: block; }
-        #periodText { font-size: 8px; color: #888; margin-bottom: 2px; }
 
-        #miniTrigger { position:fixed; top:40%; left:0; width:30px; height:30px; background:#000; border:2px solid #00ff00; border-radius:0 15px 15px 0; display:none; align-items:center; justify-content:center; z-index:100000; color:#00ff00; }
+        .handle {
+            font-family: 'Orbitron'; font-size: 8px; color: #fff;
+            background: rgba(255,255,255,0.1);
+            margin-bottom: 8px; padding: 8px 0;
+            border-radius: 6px; cursor: move;
+            user-select: none;
+            letter-spacing: 1px;
+        }
+
+        .result-box { 
+            background: rgba(255,255,255,0.05); 
+            border-radius: 8px; 
+            padding: 10px 0; 
+            margin: 5px 0; 
+            border: 1px solid #222; 
+        }
+
+        #signalText { 
+            font-family: 'Orbitron'; 
+            font-size: 14px; 
+            font-weight: bold; 
+            display: block; 
+            color: #666; 
+        }
+
+        #timerText { 
+            font-size: 20px; 
+            color: #ffeb3b; 
+            font-weight: bold; 
+            font-family: 'Orbitron'; 
+            display: block; 
+            text-shadow: 0 0 10px rgba(255,235,59,0.5);
+        }
+
+        #periodText { 
+            font-size: 10px; 
+            color: #aaa; 
+            font-weight: bold; 
+        }
+
+        .hide-btn { 
+            background: rgba(255,0,0,0.2); 
+            color: #ff5555; 
+            font-size: 8px; 
+            padding: 5px 0; 
+            width: 100%; 
+            margin-top: 5px; 
+            border: 1px solid #f00; 
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Orbitron';
+        }
+
+        /* Mini Trigger for showing box */
+        #userTrigger {
+            position: fixed; top: 40%; left: 0; 
+            width: 45px; height: 35px; background: #000; 
+            display: none; align-items: center; justify-content: center; 
+            z-index: 100000; font-size: 10px; font-weight: bold;
+            color: #ffeb3b; border: 2px solid #ffeb3b; 
+            border-radius: 0 10px 10px 0;
+            box-shadow: 0 0 10px rgba(255,235,59,0.3); 
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
+<!-- গেম ব্যাকগ্রাউন্ড -->
 <div class="game-frame">
     <iframe src="https://hgnice.bet/#/register?invitationCode=678131139375"></iframe>
 </div>
 
-<div id="dragBox">
-    <div class="title">S'S DARK LIVE</div>
-    
-    <div id="dashUI">
-        <div id="periodText">PERIOD: ---</div>
-        <div class="result-box">
-            <span id="signalText" style="color:#666;">WAITING</span>
-            <span id="timerText">00s</span>
-        </div>
-        <button class="btn-style" style="background:red; color:#fff; font-size:7px;" onclick="toggleView(false)">HIDE MENU</button>
+<!-- ইউজার সিগন্যাল প্যানেল -->
+<div id="userBox">
+    <div class="handle" id="dragHandle">S'S DARK LIVE</div>
+    <div id="periodText">PERIOD: ---</div>
+    <div class="result-box">
+        <span id="signalText">WAITING</span>
+        <span id="timerText">30s</span>
     </div>
+    <button class="hide-btn" onclick="toggleView(false)">HIDE</button>
 </div>
 
-<div id="miniTrigger" onclick="toggleView(true)">▶</div>
+<!-- হাইড করা থাকলে দেখানোর বাটন -->
+<div id="userTrigger" onclick="toggleView(true)">LIVE</div>
 
 <script>
+    const pageLoadTime = Date.now();
+
     // Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyAyrZ0fFcj5Y5HtlKzGJIsBtC9UeGbSDtI",
@@ -72,70 +144,64 @@
 
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-
-    let lastSignalData = null;
-
-    // Firebase থেকে ডাটা শোনা
-    function startListening() {
-        database.ref('liveControl').on('value', (snapshot) => {
-            lastSignalData = snapshot.val();
-        });
+    
+    // --- 30S LIFETIME LOOP TIMER ---
+    function update30sTimer() {
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        const remaining = 30 - (nowSeconds % 30); 
+        document.getElementById("timerText").innerText = remaining.toString().padStart(2, '0') + "s";
     }
+    setInterval(update30sTimer, 1000);
 
-    // প্রধান টাইমার এবং লজিক ইঞ্জিন
-    function runAutoSystem() {
-        setInterval(() => {
-            const now = Date.now();
-            
-            // অটো ৩০ সেকেন্ডের টাইমার ক্যালকুলেশন
-            const timeLeft = 30 - (Math.floor(now / 1000) % 30);
-            
-            // বর্তমান ৩০ সেকেন্ড সাইকেলের শুরুর সময় বের করা
-            const currentCycleStartTime = Math.floor(now / 30000) * 30000;
-
-            const signalEl = document.getElementById("signalText");
-            const periodEl = document.getElementById("periodText");
-            const timerEl = document.getElementById("timerText");
-
-            // ১. টাইমার আপডেট
-            timerEl.innerText = (timeLeft < 10 ? "0" : "") + timeLeft + "s";
-
-            // ২. সিগন্যাল লজিক: 
-            // যদি Firebase এ ডাটা থাকে এবং সেই ডাটার 'startTime' বর্তমান ৩০ সেকেন্ড লুপের ভেতরে হয়, তবেই দেখাবে।
-            if (lastSignalData && lastSignalData.startTime >= currentCycleStartTime) {
-                signalEl.innerText = lastSignalData.signal;
-                signalEl.style.color = lastSignalData.color;
-                periodEl.innerText = "PERIOD: " + lastSignalData.period;
-            } else {
-                // ৩০ সেকেন্ড শেষ হলে বা নতুন লুপ শুরু হলে সিগন্যাল খালি (WAITING) হয়ে যাবে
-                signalEl.innerText = "WAITING";
-                signalEl.style.color = "#666";
-                periodEl.innerText = "PERIOD: ---";
+    // --- FIREBASE LISTENING (রিসিভার) ---
+    database.ref('liveControl').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if(data) {
+            // যদি অ্যাডমিন রিসেট পাঠায়
+            if (data.signal === "WAITING") {
+                const signalElem = document.getElementById("signalText");
+                signalElem.innerText = "WAITING";
+                signalElem.style.color = "#666";
+                document.getElementById("periodText").innerText = "PERIOD: " + data.period;
+            } 
+            // শুধুমাত্র পেজ ওপেন করার পরের নতুন সিগন্যাল দেখাবে
+            else if (data.timestamp > pageLoadTime) { 
+                const signalElem = document.getElementById("signalText");
+                signalElem.innerText = data.signal;
+                signalElem.style.color = data.color;
+                document.getElementById("periodText").innerText = "PERIOD: " + data.period;
             }
-        }, 1000);
+        }
+    });
+
+    // --- ULTRA SMOOTH DRAG LOGIC (Translate3d) ---
+    const box = document.getElementById("userBox");
+    const handle = document.getElementById("dragHandle");
+    let currentX = 0, currentY = 0, initialX, initialY;
+    let xOffset = 0, yOffset = 0;
+
+    handle.addEventListener("touchstart", (e) => {
+        initialX = e.touches[0].clientX - xOffset;
+        initialY = e.touches[0].clientY - yOffset;
+        document.addEventListener("touchmove", drag, { passive: false });
+        document.addEventListener("touchend", () => {
+            document.removeEventListener("touchmove", drag);
+        });
+    });
+
+    function drag(e) {
+        e.preventDefault();
+        currentX = e.touches[0].clientX - initialX;
+        currentY = e.touches[0].clientY - initialY;
+        xOffset = currentX;
+        yOffset = currentY;
+        box.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
     }
 
-    // সিস্টেম চালু করা
-    startListening();
-    runAutoSystem();
-
-    // Draggable UI Logic
-    const box = document.getElementById("dragBox");
-    let isMoving=false, ox, oy;
-    box.addEventListener("touchstart", (e) => {
-        if(e.target.tagName==="BUTTON") return;
-        isMoving=true; ox=e.touches[0].clientX-box.offsetLeft; oy=e.touches[0].clientY-box.offsetTop;
-    });
-    document.addEventListener("touchmove", (e) => {
-        if(!isMoving) return;
-        box.style.left=(e.touches[0].clientX-ox)+"px"; box.style.top=(e.touches[0].clientY-oy)+"px";
-        e.preventDefault();
-    },{passive:false});
-    document.addEventListener("touchend", () => isMoving=false);
-
-    function toggleView(show){
-        box.style.display=show?"block":"none";
-        document.getElementById("miniTrigger").style.display=show?"none":"flex";
+    // --- HIDE/SHOW LOGIC ---
+    function toggleView(show) {
+        box.style.display = show ? "block" : "none";
+        document.getElementById("userTrigger").style.display = show ? "none" : "flex";
     }
 </script>
 </body>
